@@ -9,7 +9,7 @@ main:
     mov $4, %eax
     mov $1, %ebx
     mov $hw, %ecx
-    mov $len, %edx /*?? \n ->  +1 sau +2*/
+    mov $len, %edx 
     int $0x80
 
     mov $1, %eax
