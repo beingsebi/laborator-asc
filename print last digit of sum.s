@@ -1,20 +1,27 @@
 .data
-    x: .long 2
-    y: .long 7
-    sum : .space 4
+    x: .long 23 /* x=23*/
+    y: .long 71 /*y=71*/
+    zece: .long 10
+    lstd : .space 4 /* (x+y)%10*/
 
 .text
 
 .globl main
 main:
     mov x, %eax
-    add y, %eax
-    add $0x30, %eax
-    mov %eax, sum
+    add y, %eax /*eax = x+y*/
+    
+    mov zece, %ebx
+    mov $0, %edx /*fara asta da FLOATING POINT EXCEPTION*/
+    idiv %ebx /*edx = (x+y)%10*/
+    mov %edx, %eax
 
-    mov $4, %eax
+    add $0x30, %eax /*transform in caracter*/
+    mov %eax, lstd 
+
+    mov $4, %eax /*afisez*/
     mov $1, %ebx
-    mov $sum, %ecx
+    mov $lstd, %ecx
     mov $1, %edx
     int $0x80
 
