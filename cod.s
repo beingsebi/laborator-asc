@@ -9,7 +9,6 @@ main:
     
     shr $4, x
     shl $4, y
-    
     mov x, %eax
     add y, %eax
 
