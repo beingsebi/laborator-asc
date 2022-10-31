@@ -1,7 +1,7 @@
 .data
     x: .long 40
     y: .long 1
-    rez: .long 0 # (40/16) + (1*16) = 2+16 = 18
+    rez: .long 0 
 .text
 
 .globl main
