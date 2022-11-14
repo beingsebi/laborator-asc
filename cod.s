@@ -1,40 +1,53 @@
 .data
-   sir: .asciz "abcde"
-   n: .long 5
-   m: .space 4
-   formatPrintf: .asciz "%s\n"
+   sir: .long 5, 3, 88, 81, 10, 23, 88
+   n: .long 7
+   aux: .space 4
+   ans: .space 4
+   cnt: .space 4
+   formatPrintf: .asciz "maximum is %d and it appeared %d times\n"
 .text
 
 .globl main
 main:
-
-   lea sir, %edi
-
-   movl n, %eax
-   movl %eax, m
-   shr $1, m   # m=n/2
    
+   lea sir, %edi
    xorl %ecx, %ecx
-   mov n, %ebx
-   dec %ebx # ebx=m - 1
-
-   startloop:
-      cmp %ecx, m
-      je finloop
-      movb (%edi, %ecx,1), %dl
-      movb (%edi,%ebx,1), %al
-      movb %al, (%edi, %ecx,1)
-      movb %dl, (%edi,%ebx,1)
-
-
+   movl $0, ans
+   
+   startloop1:
+   cmp %ecx, n
+   je finloop1
+      movl (%edi,%ecx,4), %edx
+         cmp %edx, ans
+         jae notbigger
+         movl %edx, ans
+         notbigger:
       inc %ecx
-      dec %ebx
-   finloop:
+      jmp startloop1
+   finloop1:
 
-   pushl $sir
+   mov $0, cnt
+   xorl %ecx, %ecx
+
+   startloop2:
+   cmp %ecx, n
+   je finloop2
+      movl (%edi,%ecx,4), %edx
+         cmp %edx, ans
+         jne notequal
+         inc cnt
+         notequal:
+      inc %ecx
+      jmp startloop2
+   finloop2:
+
+   pushl cnt
+   pushl ans
    pushl $formatPrintf
-   call printf
-
+   call printf 
+   popl %edx
+   popl %edx 
+   popl %edx 
 exit:
     mov $1, %eax
     xorl %ebx, %ebx
