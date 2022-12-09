@@ -54,7 +54,7 @@ fin_loop_read:
 
     xor %ecx, %ecx
 loop:
-    cmp n, %ecx
+    cmp n, %ecx # aici  trebuia k
     je fin_loop 
     
     mov (%esi,%ecx,4), %eax
