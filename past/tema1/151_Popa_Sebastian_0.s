@@ -120,8 +120,10 @@ loop_init_lin:							#
 		mov %eax, %edx					#						
 		add %edi, %edx					#
 		mov $0, (%edx) 					#
-# change here							#
+# change above							#
 #  if u want any other neutral value	#
+#  trebuie neaparat sa fie 0 ca sa		# 
+# mearga cerinta 2						#
 		pop %ecx						#
 		pop %eax						#
 										#
