@@ -5,7 +5,7 @@
 	vecin: .space 4
 	dims: .space 500
 	mat: .space 40000
-	formatScanf: .asciz "%d"
+    formatScanf: .asciz "%d"
 	printfInt: .asciz "%d "
 	printfEndl: .asciz "\n"
 .text
@@ -17,7 +17,7 @@
 read_int:                                          #
 	push %ebp                                      #
 	mov %esp, %ebp                                 #
-												   #
+	                                               #
 	pusha                                          #
 	push 8(%ebp)                                   #
 	pushl $formatScanf                             #
@@ -58,7 +58,7 @@ ret												  #
 .globl  main
 main:
 	
-	# ##############
+    # ##############
 	# read cerinta #
 	pushl $cerinta #
 	call read_int  #
@@ -66,7 +66,7 @@ main:
 	# ##############
 
 
-	# #############
+    # #############
 	# read n ######
 	pushl $n	  #
 	call read_int #
@@ -74,7 +74,7 @@ main:
 	# #############
 
 
-	# ##################################
+    # ##################################
 	# read nr legaturi pt fiecare nod ##
 	lea dims, %edi					   #
 	xor %ecx, %ecx  			       #
@@ -92,6 +92,47 @@ loop_read_dims:   					   #
 	jmp loop_read_dims   			   #
 fin_loop_read_dims:					   #
 	# ##################################
+
+
+
+# #######################################
+# init matrix with zeroes 				#
+	lea mat, %edi						#
+	xor %ecx, %ecx						#
+loop_init_lin:							#
+	cmp %ecx, n 						#
+	je fin_loop_init_lin				#
+										#
+	xor %eax, %eax						#
+	loop_init_col:						#
+		cmp %eax, n						#
+		je fin_loop_init_col			#
+										#
+		push %eax						#
+		push %ecx						#
+										#
+		push %eax						#
+		push %ecx						#
+		call get_index					#
+		pop %edx						#
+		pop %edx						#
+										#
+		mov %eax, %edx					#						
+		add %edi, %edx					#
+		mov $0, (%edx) 					#
+# change here							#
+#  if u want any other neutral value	#
+		pop %ecx						#
+		pop %eax						#
+										#
+		inc %eax						#
+		jmp loop_init_col				#
+	fin_loop_init_col:					#
+										#
+	inc %ecx							#
+	jmp loop_init_lin					#
+fin_loop_init_lin:						#
+# #######################################
 
 
 # citesc vecinii numerelor si  ##########
@@ -194,9 +235,6 @@ fin_loop_print_line:								#
 
 
 cerinta2:
-
-
-
 
 et_exit:
 	mov $1, %eax
