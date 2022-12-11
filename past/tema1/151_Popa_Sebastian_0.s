@@ -8,19 +8,18 @@
 	lungime: .space 4
 	dims: .space 500
 	mat: .space 50000
-	m1: .space 50000
-	m2: .space 50000
 	mres: .space 50000
+	rezultat: .space 50000
 
     formatScanf: .asciz "%d"
 	printfInt: .asciz "%d "
 	printfEndl: .asciz "\n"
 .text
 
+
 # ###################################################
 # function to read an integer            	        #
-# takes one parameter from the top of the stack, 	#
-# the address where you want to store the read nr	#
+# read_int($x) give the address						#
 read_int:                             	         	#
 	push %ebp                                    	#
 	mov %esp, %ebp                               	#
@@ -37,6 +36,25 @@ ret    # end_read_int							  	#
 # ###################################################
 
 
+# ###################################################
+print_int:     # print_int(x)          	         	#
+	push %ebp                                    	#
+	mov %esp, %ebp                               	#
+	pusha			# keep							#
+		push 8(%ebp)								#
+		push $printfInt								#
+		call printf 								#
+		addl $8, %esp								#		
+													#
+		pushl $0        							#
+		call fflush 								#
+		addl $4, %esp								#
+	popa											#
+	pop %ebp                                       	#
+ret    # end_print_int							  	#
+# ###################################################
+
+# ###############################################
 # function to get index in array if given #######
 # index = 4*n*lin + 4*col						#
 # get_index(lin,col,n) 							#
@@ -61,6 +79,7 @@ ret		# end get_index				 			#
 # ###############################################
 
 
+# ###############################################
 # init_mat($mat,n) ##############################
 init_mat: 										#
 	push %ebp		# done						#					  
@@ -85,8 +104,9 @@ init_mat: 										#
 			call get_index						#
 			addl $12, %esp # pop				#
 			add 8(%ebp), %eax					# 
-	# am in eax adresa elementului matrice[i][j]#
-			mov $0, (%eax) # pun 0 acolo   		#
+	# am in eax adresa 							#	
+	# elementului matrice[i][j]#				#
+			movl $0, (%eax) # pun 0 acolo   	#
 												#
 			pop %edx							#
 			pop %ecx							#
@@ -102,6 +122,72 @@ init_mat: 										#
 	pop %ebp # done								#
 ret		# end init_mat							#
 # ###############################################
+
+
+# ###############################
+iden_mat: # iden_mat($mat,n)	#
+	push %ebp # done			#
+	mov %esp, %ebp				#
+								#
+	push 12(%ebp) # n			#
+	push 8(%ebp)  # mat			#
+	call init_mat				#
+	add $8, %esp  # pop			#
+								#
+	xor %ecx, %ecx # i			#
+	for_iden:					#
+	cmp %ecx, 12(%ebp)			#
+	je end_for_iden				#
+								#
+		pushl 12(%ebp) # n		#
+		push %ecx      # i		#
+		push %ecx	   # i		#
+		call get_index			#
+		addl $12, %esp # pop	#
+								#
+		add 8(%ebp), %eax		#
+		movl $1, (%eax)			#
+								#
+	inc %ecx					#
+	jmp for_iden				#
+	end_for_iden:				#
+								#
+	pop %ebp # done				#
+ret		# end iden_mat			#
+# ###############################
+
+
+# #######################################
+copy_mat: # copy_mat($a, $b, n) b<-a	#	
+	push %ebp							#
+	mov %esp, %ebp						#
+	push %esi							#
+	push %edi							#
+										#
+	mov 8(%ebp), %esi					#
+	mov 12(%ebp), %edi					#
+										#
+	xor %edx, %edx						#
+	mov 16(%ebp), %eax					#
+	mull 16(%ebp)						#
+										#
+	xor %ecx, %ecx						#
+	for_copy:							#
+	cmp %ecx, %eax						#
+	je end_for_copy						#
+										#
+	mov (%esi, %ecx, 4), %edx			#
+	mov %edx, (%edi, %ecx, 4)			#
+										#
+	inc %ecx							#
+	jmp for_copy						#
+	end_for_copy:						#
+										#
+	pop %edi							#
+	pop %esi							#
+	pop %ebp							#
+ret	# end copy_mat						#
+# #######################################
 
 
 # ###################################################
@@ -133,16 +219,13 @@ loop_print_line:									#
 		pop %edx		# keep2						#
 		pop %ecx		# keep1						#
 													#
-													#
-	#	luam valoarea de la adresa aia din matrice	#
+	#	luam valoarea de la adresa 					#
+	# aia din matrice								#
 		movl (%eax), %eax							#
-		# si o afisam								#
-		pusha			# keep						#
+													#
 		push %eax									#
-		push $printfInt								#
-		call printf 								#
-		addl $8, %esp								#
-		popa			# keep						#
+		call print_int								#
+		pop %eax									#
 													#
 		inc %edx									#
 		jmp loop_print_coloane						#
@@ -168,91 +251,86 @@ matrix_mult: # (m1,m2,mres,n)
 	
 	push %ebp		# done							  
 	mov %esp, %ebp	
-
 	# 8(%ebp) -> m1
 	# 12(%ebp) -> m2
 	# 16(%ebp) -> mres
 	# 20(%ebp) -> n
 
-	subl $20, %esp # done
+
+	subl $12, %esp # done
 	push %esi # done
 	push %edi # done
 
-	lea m1, %esi
-	lea m2, %edi
+	mov 8(%ebp), %esi
+	mov 12(%ebp), %edi
 	
 	pushl 20(%ebp) # n
 	pushl 16(%ebp) # $mres
 	call init_mat
 	addl $8, %esp # pop
 
-	movl $0, -4(%ebp)  # -> i
-	movl $0, -8(%ebp)  # -> j	
-	movl $0, -12(%ebp) # -> k
-	#	-16(%ebp) aux1
-	#	-20(%ebp) aux2
+	#	-4(%ebp) i
+	#	-8(%ebp) j
+	#	-12(%ebp) k
+	
+	movl $0, -4(%ebp) # i
 	for1:
-	mov -4(%ebp), %eax
-	cmp %eax, 20(%ebp)
+	movl -4(%ebp), %eax
+	cmpl %eax, 20(%ebp)
 	je end_for1
 
+		movl $0, -8(%ebp)  # j	
 		for2:
-		mov -8(%ebp), %eax
-		cmp %eax, 20(%ebp)
+		movl -8(%ebp), %eax
+		cmpl %eax, 20(%ebp)
 		je end_for2
 
+			movl $0, -12(%ebp) # k
 			for3:
-			mov -12(%ebp), %eax
-			cmp %eax, 20(%ebp)
+			movl -12(%ebp), %eax
+			cmpl %eax, 20(%ebp)
 			je end_for3
+				# mres[i][j]+=m1[i][k]*m2[k][j]
+				pushl 20(%ebp) # n
+				pushl -12(%ebp) # k
+				pushl -4(%ebp) # i
+				call get_index
+				addl $12, %esp # pop
+				
+				add %esi, %eax
+				mov (%eax), %eax
+				push %eax # retin m1[i][k] done
 
-			# mres[i][j]+=m1[i][k]*m2[k][j]
-			pushl 20(%ebp) # n
-			pushl -12(%ebp) # k
-			pushl -4(%ebp) # i
-			call get_index
-			addl $12, %esp # pop
-			
-			add %esi, %eax
-			mov (%eax), %edx
-			push %edx # retin valoarea
+				pushl 20(%ebp) # n
+				pushl -8(%ebp) # j
+				pushl -12(%ebp) # k
+				call get_index
+				addl $12, %esp # pop
 
-			pushl 20(%ebp) # n
-			pushl -8(%ebp) # j
-			pushl -12(%ebp) # k
-			call get_index
-			addl $12, %esp # pop
+				add %edi, %eax
+				movl (%eax), %eax
+				xor %edx, %edx 
+				pop %ecx  # iau prima valoare de pe stiva done
+				mull %ecx
+				# am in eax ce trebuie sa adun rezultatul
+				
+				push %eax # retin pe stiva ce trb sa adun done
 
-			add %edi, %eax
-			mov (%eax), %edx
+				pushl 20(%ebp) # n
+				pushl -8(%ebp) # j
+				pushl -4(%ebp) # i
+				call get_index
+				addl $12, %esp # pop
 
-			mov %edx, %eax
-			xor %edx, %edx 
-			pop %ecx  # iau prima valoare de pe stiva
-			mull %ecx
-			# am in eax rezultatul
-			
-			push %eax # retin pe stiva
+				add 16(%ebp), %eax
+				# am in eax adresa la care trebuie sa pun rezultatul
 
+				mov (%eax), %edx # am vechea valoarea de la (i,j) in edx
+				pop %ecx # ce trebuie sa adun
 
-			pushl 20(%ebp) # n
-			pushl -8(%ebp) # j
-			pushl -4(%ebp) # i
-			call get_index
-			addl $12, %esp # pop
+				add %ecx, %edx # am noul rezultat in %edx
 
-			push %esi
-			lea mres, %esi
-			add %esi, %eax
-			pop %esi
-			# am in eax adresa la care trebuie sa pun rezultatul
-
-			mov (%eax), %edx # am vechea valoarea de la (i,j) in edx
-			pop %ecx # ce trebuie sa adun
-
-			add %ecx, %edx # am noul reezultat in %edx
-
-			mov %edx, (%eax) # pun la loc in matrice
+				mov %edx, (%eax) # pun la loc in matrice
 			
 
 			incl -12(%ebp)
@@ -269,30 +347,31 @@ matrix_mult: # (m1,m2,mres,n)
 
 	pop %edi # done
 	pop %esi # done 
-	addl $20, %esp # done
+	addl $12, %esp # done
 	pop %ebp # done
 ret
 
 .globl  main
 main:
+
     # ####################
-	# read cerinta # #####
-	pushl $cerinta # #####
-	call read_int  # #####
-	pop %eax       # #####
+	# read cerinta 		 #
+	pushl $cerinta       #
+	call read_int 		 #
+	pop %eax       	     #
 	# ####################
 
 
     # ###################
-	# read n ###### #####
-	pushl $n	  # #####
-	call read_int # #####
-	pop %eax	  # #####
+	# read n 			#
+	pushl $n	 		#
+	call read_int 		#
+	pop %eax	  		#
 	# ###################
 
 
     # ##################################
-	# read nr legaturi pt fiecare nod ##
+	# read nr legaturi pt fiecare varf #
 	lea dims, %edi					   #
 	xor %ecx, %ecx  			       #
 loop_read_dims:   					   #
@@ -310,13 +389,15 @@ loop_read_dims:   					   #
 fin_loop_read_dims:					   #
 	# ##################################
 
-	pushl n
-	pushl $mat
-	call init_mat
-	add $8, %esp # pop
 
+# #######################################
 # citesc vecinii numerelor si  ##########
-# pun in matrice						#
+# pun in matricea de adiacenta			#
+	pushl n								#
+	pushl $mat							#
+	call init_mat						#
+	add $8, %esp # pop					#
+										#
 	xor %ecx, %ecx						#
 	lea dims, %esi						#
 	lea mat, %edi						#
@@ -326,7 +407,8 @@ loop_read_muchii:						#
 										#
 	mov (%esi, %ecx,4), %eax			#
 	mov %eax, aux						#
-# pun din vector in aux cati vecini	am  #
+	# pun din vector in 				#
+	# aux cati vecini am 				#
 	xor %eax, %eax						#
 	loop_vecini:						#
 		cmp %eax, aux					#
@@ -344,9 +426,7 @@ loop_read_muchii:						#
 		push vecin						#
 		push %ecx						#
 		call get_index					#
-		pop %ecx						#
-		pop %ecx						#
-		pop %ecx						#
+		add $12, %esp # pop				#
 # pun in matrice 						#
 		add %edi, %eax					#
 		movl $1, (%eax)					#
@@ -376,50 +456,104 @@ cerinta1:	# doar printam	#
 	jmp et_exit				#
 # ###########################
 
-cerinta2:
 
-	# ####################
-	# read lungime # #####
-	pushl $lungime # #####
-	call read_int  # #####
-	pop %eax       # #####
-	# ####################
+# ###########################################################
+cerinta2:													#
+															#
+	# ##############										#
+	# read lungime # 										#
+	pushl $lungime # 										#
+	call read_int  # 										#
+	pop %eax       # 										#
+	# ##############										#
+															#
+	# ##############										#
+	# read sursa   #										#
+	pushl $sursa   #										#
+	call read_int  #										#
+	pop %eax       #										#
+	# ##############										#
+															#	
+	# #################										#
+	# read destinatie #										#
+	pushl $destinatie #										#
+	call read_int     #										#
+	pop %eax          #										#
+	# #################										#
+															#
+															#
+	# matricea iden #										#
+	# in rezultat	#										#
+	push n			#										#
+	push $rezultat	#										#
+	call iden_mat	#										#
+	addl $8, %esp 	#										#
+	# ###############										#
+															#
+															#
+# ######################################					#
+#   rezultat*=mat de lungime ori		#					#
+	xor %ecx, %ecx						#					#
+	loop_pow:							#					#
+	cmp %ecx, lungime					#					#
+	je fin_loop_pow						#					#
+										#					#
+	# rezultat= rezultat * mat			#					#
+	# i.e.								#					#
+	# matrix_mult(mat,rezultat,mresn)	#					#
+	# mat_copy(mres,rezultat,n)			#					#
+	push %ecx							#					#
+		push n 							#					#
+		push $mres						#					#
+		push $mat						#					#
+		push $rezultat					#					#
+		call matrix_mult				#					#
+		add $16, %esp					#					#
+										#					#
+		push n							#					#
+		push $rezultat					#					#
+		push $mres						#					#
+		call copy_mat					#					#
+		add $12, %esp					#					#
+	pop %ecx							#					#
+										#					#
+	inc %ecx							#					#
+	jmp loop_pow						#					#
+	fin_loop_pow:						#					#
+# #######################################					#
+															#
+															#
+# ###################										#
+# if u wanna see	#										#
+# the entire matrix	#										#
+#	push n			#										#
+#	push $rezultat	#										#
+#	call print_mat	#										#
+#	add $8, %esp	#										#
+# ###################										#
+															#
+															#
+# ###################################						#
+# print rezultat[sursa][destinatie] #						#
+	push n							#						#
+	push destinatie					#						#
+	push sursa						#						#
+	call get_index					#						#
+	add $12, %esp					#						#
+									#						#
+	lea rezultat, %esi				#						#
+	add %esi, %eax					#						#
+	mov (%eax), %eax				#						#
+	push %eax						#						#
+	call print_int					#						#
+	pop %eax						#						#
+# ###################################						#
+# ###########################################################														
 
 
-	# ####################
-	# read sursa   # #####
-	pushl $sursa   # #####
-	call read_int  # #####
-	pop %eax       # #####
-	# ####################
-
-
-	# ####################
-	# read destinatie   ##
-	pushl $destinatie    #
-	call read_int  # #####
-	pop %eax       # #####
-	# ####################
-
-	###
-	# init rezultat cu 0
-	# pune 1 pe diag princ la rezultat
-	# functie de copiat matrice dintr-o parte in alta
-
-	xor %ecx, %ecx
-	loop_pow:
-	cmp %ecx, lungime
-	je fin_loop_pow
-	
-
-
-
-	inc %ecx
-	jmp loop_pow
-	fin_loop_pow:
-
-
-et_exit:
-	mov $1, %eax
-	xorl %ebx, %ebx
-	int $0x80
+# #######################						
+et_exit:				#
+	mov $1, %eax		#
+	xorl %ebx, %ebx		#
+	int $0x80			#
+# #######################
