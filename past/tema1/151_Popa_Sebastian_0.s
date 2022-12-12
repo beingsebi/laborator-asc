@@ -246,110 +246,113 @@ ret		# end print_mat								#
 # ###################################################
 
 
-matrix_mult: # (m1,m2,mres,n) 
-			# mres= m1*m2
-	
-	push %ebp		# done							  
-	mov %esp, %ebp	
-	# 8(%ebp) -> m1
-	# 12(%ebp) -> m2
-	# 16(%ebp) -> mres
-	# 20(%ebp) -> n
+# #######################################################################
+matrix_mult: # (m1,m2,mres,n) 											#
+			# mres= m1*m2 												#
+						 												#
+	push %ebp		# done							   					#
+	mov %esp, %ebp			 											#
+	# 8(%ebp) -> m1		 												#
+	# 12(%ebp) -> m2		 											#
+	# 16(%ebp) -> mres		 											#
+	# 20(%ebp) -> n		 												#
+							 											#
+							 											#
+	subl $12, %esp # done		 										#
+	push %esi # done		 											#
+	push %edi # done		 											#
+						 												#
+	mov 8(%ebp), %esi		 											#
+	mov 12(%ebp), %edi		 											#
+						 												#
+	pushl 20(%ebp) # n		 											#
+	pushl 16(%ebp) # $mres		 										#
+	call init_mat		 												#
+	addl $8, %esp # pop		 											#
+						 												#
+	#	-4(%ebp) i		 												#
+	#	-8(%ebp) j		 												#
+	#	-12(%ebp) k		 												#
+						 												#
+	movl $0, -4(%ebp) # i		 										#
+	for1:					 											#
+	movl -4(%ebp), %eax		 											#
+	cmpl %eax, 20(%ebp)		 											#
+	je end_for1						 									#
+												 						#
+		movl $0, -8(%ebp)  # j				 							#
+		for2:					 										#
+		movl -8(%ebp), %eax		 										#
+		cmpl %eax, 20(%ebp)		 										#
+		je end_for2		 												#
+						 												#
+			movl $0, -12(%ebp) # k		 								#
+			for3:		 												#
+			movl -12(%ebp), %eax		 								#
+			cmpl %eax, 20(%ebp)		 									#
+			je end_for3		 											#
+				# mres[i][j]+=m1[i][k]*m2[k][j]		 					#
+				pushl 20(%ebp) # n		 								#
+				pushl -12(%ebp) # k		 								#
+				pushl -4(%ebp) # i		 								#
+				call get_index		 									#
+				addl $12, %esp # pop		 							#
+										 								#
+				add %esi, %eax		 									#
+				mov (%eax), %eax		 								#
+				push %eax # retin m1[i][k] done		 					#
+		 																#
+				pushl 20(%ebp) # n		 								#
+				pushl -8(%ebp) # j		 								#
+				pushl -12(%ebp) # k		 								#
+				call get_index		 									#
+				addl $12, %esp # pop		 							#
+									 									#
+				add %edi, %eax		 									#
+				movl (%eax), %eax		 								#
+				xor %edx, %edx 		 									#
+				pop %ecx  # iau prima valoare de pe stiva done			#
+				mull %ecx		 										#
+				# am in eax ce trebuie sa adun rezultatul		 		#
+												 						#
+				push %eax # retin pe stiva ce trb sa adun done		 	#
+								 										#
+				pushl 20(%ebp) # n		 								#
+				pushl -8(%ebp) # j		 								#
+				pushl -4(%ebp) # i		 								#
+				call get_index		 									#
+				addl $12, %esp # pop		 							#
+									 									#
+				add 16(%ebp), %eax		 								#
+				# am in eax adresa la care trebuie sa pun rezultatul	#
+									 									#
+				mov (%eax), %edx # am vechea valoarea de la (i,j) in edx#
+				pop %ecx # ce trebuie sa adun		 					#
+								 										#
+				add %ecx, %edx # am noul rezultat in %edx		 		#
+										 								#
+				mov %edx, (%eax) # pun la loc in matrice		 		#
+										 								#
+										 								#
+			incl -12(%ebp)		 										#
+			jmp for3							 						#
+			end_for3:							 						#
+										 								#
+		incl -8(%ebp)							 						#
+		jmp for2							 							#
+		end_for2:							 							#
+										 								#
+	incl -4(%ebp)							 							#
+	jmp for1							 								#
+	end_for1:							 								#
+										 								#
+	pop %edi # done							 							#
+	pop %esi # done 							 						#
+	addl $12, %esp # done							 					#
+	pop %ebp # done							 							#
+ret			# end matrix_mult 											#
+# #######################################################################
 
-
-	subl $12, %esp # done
-	push %esi # done
-	push %edi # done
-
-	mov 8(%ebp), %esi
-	mov 12(%ebp), %edi
-	
-	pushl 20(%ebp) # n
-	pushl 16(%ebp) # $mres
-	call init_mat
-	addl $8, %esp # pop
-
-	#	-4(%ebp) i
-	#	-8(%ebp) j
-	#	-12(%ebp) k
-	
-	movl $0, -4(%ebp) # i
-	for1:
-	movl -4(%ebp), %eax
-	cmpl %eax, 20(%ebp)
-	je end_for1
-
-		movl $0, -8(%ebp)  # j	
-		for2:
-		movl -8(%ebp), %eax
-		cmpl %eax, 20(%ebp)
-		je end_for2
-
-			movl $0, -12(%ebp) # k
-			for3:
-			movl -12(%ebp), %eax
-			cmpl %eax, 20(%ebp)
-			je end_for3
-				# mres[i][j]+=m1[i][k]*m2[k][j]
-				pushl 20(%ebp) # n
-				pushl -12(%ebp) # k
-				pushl -4(%ebp) # i
-				call get_index
-				addl $12, %esp # pop
-				
-				add %esi, %eax
-				mov (%eax), %eax
-				push %eax # retin m1[i][k] done
-
-				pushl 20(%ebp) # n
-				pushl -8(%ebp) # j
-				pushl -12(%ebp) # k
-				call get_index
-				addl $12, %esp # pop
-
-				add %edi, %eax
-				movl (%eax), %eax
-				xor %edx, %edx 
-				pop %ecx  # iau prima valoare de pe stiva done
-				mull %ecx
-				# am in eax ce trebuie sa adun rezultatul
-				
-				push %eax # retin pe stiva ce trb sa adun done
-
-				pushl 20(%ebp) # n
-				pushl -8(%ebp) # j
-				pushl -4(%ebp) # i
-				call get_index
-				addl $12, %esp # pop
-
-				add 16(%ebp), %eax
-				# am in eax adresa la care trebuie sa pun rezultatul
-
-				mov (%eax), %edx # am vechea valoarea de la (i,j) in edx
-				pop %ecx # ce trebuie sa adun
-
-				add %ecx, %edx # am noul rezultat in %edx
-
-				mov %edx, (%eax) # pun la loc in matrice
-			
-
-			incl -12(%ebp)
-			jmp for3
-			end_for3:
-
-		incl -8(%ebp)
-		jmp for2
-		end_for2:
-
-	incl -4(%ebp)
-	jmp for1
-	end_for1:
-
-	pop %edi # done
-	pop %esi # done 
-	addl $12, %esp # done
-	pop %ebp # done
-ret
 
 .globl  main
 main:
