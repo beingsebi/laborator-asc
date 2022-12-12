@@ -1,3 +1,8 @@
+# https://www.ibm.com/docs/en/i/7.4?topic=ssw_ibm_i_74/apis/mmap.html
+# https://www.cs.uaf.edu/2016/fall/cs301/lecture/11_02_mmap.html
+# https://linuxhint.com/using_mmap_function_linux/
+# https://www.systutorials.com/docs/linux/man/2-mmap/
+
 # The six arguments to mmap are:
 # 1. address, a pointer to the first byte to change.  This pointer and the length must both be a multiple of 4096 bytes (0x1000 bytes), since this is the size of a page. Passing a zero pointer asks for the next unused area of memory.
 # 2. length, the number of bytes to change
