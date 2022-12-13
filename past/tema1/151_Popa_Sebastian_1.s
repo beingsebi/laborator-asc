@@ -40,9 +40,9 @@
 	sursa: .space 4
 	destinatie: .space 4
 	lungime: .space 4
-	dims: .space 500
-	mat: .space 50000
-	rezultat: .space 50000
+	dims: .space 4
+	mat: .space 4
+	rezultat: .space 4
 
     formatScanf: .asciz "%d"
 	printfInt: .asciz "%d "
@@ -403,9 +403,51 @@ main:
 	# ###################
 
 
+push %ebp
+
+	mov $192, %eax 		# interruption codes 
+	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit
+	mov $49152 , %ecx	# how many bytes i need, also chose a multiple of 4096
+	mov $3, %edx		# read and write capabilities
+	mov $33 , %esi		# anon and shared 
+	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1
+	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0
+	int $0x80
+	mov %eax, mat
+
+
+	mov $192, %eax 		# interruption codes 
+	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit
+	mov $49152 , %ecx	# how many bytes i need, also chose a multiple of 4096
+	mov $3, %edx		# read and write capabilities
+	mov $33 , %esi		# anon and shared 
+	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1
+	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0
+	int $0x80
+	mov %eax, rezultat
+
+
+	mov $192, %eax 		# interruption codes 
+	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit
+	mov $4096 , %ecx	# how many bytes i need, also chose a multiple of 4096
+	mov $3, %edx		# read and write capabilities
+	mov $33 , %esi		# anon and shared 
+	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1
+	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0
+	int $0x80
+	mov %eax, dims
+pop %ebp
+
+
+
+
+
+
+
+
     # ##################################
 	# read nr legaturi pt fiecare varf #
-	lea dims, %edi					   #
+	mov dims, %edi					   #
 	xor %ecx, %ecx  			       #
 loop_read_dims:   					   #
 	cmp %ecx, n  					   #
@@ -427,13 +469,13 @@ fin_loop_read_dims:					   #
 # citesc vecinii numerelor si  ##########
 # pun in matricea de adiacenta			#
 	pushl n								#
-	pushl $mat							#
+	pushl mat							#
 	call init_mat						#
 	add $8, %esp # pop					#
 										#
 	xor %ecx, %ecx						#
-	lea dims, %esi						#
-	lea mat, %edi						#
+	mov dims, %esi						#
+	mov mat, %edi						#
 loop_read_muchii:						#
 	cmp %ecx, n							#
 	je fin_loop_read_muchii				#
@@ -518,7 +560,7 @@ auxet:
 	# matricea iden #										#
 	# in rezultat	#										#
 	push n			#										#
-	push $rezultat	#										#
+	push rezultat	#										#
 	call iden_mat	#										#
 	addl $8, %esp 	#										#
 	# ###############										#
@@ -539,14 +581,14 @@ auxet:
 	push %eax						#					#
 		push n 							#					#
 		push %eax						#					#
-		push $mat						#					#
-		push $rezultat					#					#
+		push mat						#					#
+		push rezultat					#					#
 		call matrix_mult				#					#
 		add $16, %esp					#					#
 	pop %eax	
 	push %eax								#					#
 		push n							#					#
-		push $rezultat					#					#
+		push rezultat					#					#
 		push %eax						#					#
 		call copy_mat					#					#
 		add $12, %esp
@@ -564,7 +606,7 @@ auxet:
 # if u wanna see	#										#
 # the entire matrix	#										#
 #	push n			#										#
-#	push $rezultat	#										#
+#	push rezultat	#										#
 #	call print_mat	#										#
 #	add $8, %esp	#										#
 # ###################										#
@@ -578,12 +620,18 @@ auxet:
 	call get_index					#						#
 	add $12, %esp					#						#
 									#						#
-	lea rezultat, %esi				#						#
+	mov rezultat, %esi				#						#
 	add %esi, %eax					#						#
 	mov (%eax), %eax				#						#
 	push %eax						#						#
 	call print_int					#						#
 	pop %eax						#						#
+									#						#
+	pusha		# keep				#						#
+	push $printfEndl				#						#
+	call printf 					#						#
+	pop %eax						#						#
+	popa		# keep				#						#
 # ###################################						#
 # ###########################################################
 
