@@ -17,18 +17,19 @@
 
 # echo '#include <sys/mman.h>' | gcc -E - -dM | less   [>input.txt]   TO SEE THE FLAG VALUES ON YOUR MACHINE
 
+# for my machine
 # protections
 # PROT_NONE 	0 	No data access is allowed.
 # PROT_READ 	1 	Read access is allowed.
 # PROT_WRITE 	2 	Write access is allowed. Note that this value assumes PROT_READ also.
 # PROT_EXEC 	4 	This value is allowed, but is equivalent to PROT_READ.
+# xor/or/add these 
 
 # flags
-# MAP_SHARED 	1 	Changes are shared.
-# MAP_PRIVATE 	2 	Changes are private.
-# MAP_FIXED 	16 	Parameter addr has exact address
-# MAP_ANON		32
-
+# MAP_SHARED 		1 	Changes are shared.
+# MAP_PRIVATE 		2 	Changes are private.
+# MAP_FIXED 		16 	Parameter addr has exact address
+# MAP_ANONYMOUS		32
 # xor/or/add these 
 
 
@@ -42,8 +43,8 @@
 	lungime: .space 4
 	dims: .space 4
 	mat: .space 4
+	mres: .space 4
 	rezultat: .space 4
-
     formatScanf: .asciz "%d"
 	printfInt: .asciz "%d "
 	printfEndl: .asciz "\n"
@@ -86,6 +87,7 @@ print_int:     # print_int(x)          	         	#
 	pop %ebp                                       	#
 ret    # end_print_int							  	#
 # ###################################################
+
 
 # ###############################################
 # function to get index in array if given #######
@@ -279,174 +281,177 @@ ret		# end print_mat								#
 # ###################################################
 
 
-matrix_mult: # (m1,m2,mres,n) 
-			# mres= m1*m2
-	
-	push %ebp		# done							  
-	mov %esp, %ebp	
-	# 8(%ebp) -> m1
-	# 12(%ebp) -> m2
-	# 16(%ebp) -> mres
-	# 20(%ebp) -> n
+# #######################################################################
+matrix_mult: # (m1,m2,mres,n) 											#
+			# mres= m1*m2 												#
+	push %ebp		# done						 						#	  
+	mov %esp, %ebp	 													#
+	# 8(%ebp) -> m1 													#
+	# 12(%ebp) -> m2 													#
+	# 16(%ebp) -> mres 													#
+	# 20(%ebp) -> n 													#
+	#	-4(%ebp) i 														#
+	#	-8(%ebp) j 														#
+	#	-12(%ebp) k 													#
+ 																		#
+	subl $12, %esp # done 												#
+	push %esi # done 													#
+	push %edi # done 													#
+ 																		#
+	mov 8(%ebp), %esi 													#
+	mov 12(%ebp), %edi 													#
+	 																	#
+	pushl 20(%ebp) # n 													#
+	pushl 16(%ebp) # $mres 												#
+	call init_mat 														#
+	addl $8, %esp # pop 												#
+ 																		#
+	movl $0, -4(%ebp) # i 												#
+	for1: 																#
+	movl -4(%ebp), %eax 												#
+	cmpl %eax, 20(%ebp) 												#
+	je end_for1 														#
+ 																		#
+		movl $0, -8(%ebp)  # j	 										#
+		for2: 															#
+		movl -8(%ebp), %eax 											#
+		cmpl %eax, 20(%ebp) 											#
+		je end_for2 													#
+ 																		#
+			movl $0, -12(%ebp) # k 										#
+			for3: 														#
+			movl -12(%ebp), %eax 										#
+			cmpl %eax, 20(%ebp) 										#
+			je end_for3 												#
+				# mres[i][j]+=m1[i][k]*m2[k][j] 						#
+				pushl 20(%ebp) # n 										#
+				pushl -12(%ebp) # k 									#
+				pushl -4(%ebp) # i 										#
+				call get_index 											#
+				addl $12, %esp # pop 									#
+				 														#
+				add %esi, %eax 											#
+				mov (%eax), %eax 										#
+				push %eax # retin m1[i][k] done 						#
+ 																		#
+				pushl 20(%ebp) # n 										#
+				pushl -8(%ebp) # j 										#
+				pushl -12(%ebp) # k 									#
+				call get_index 											#
+				addl $12, %esp # pop 									#
+ 																		#	
+				add %edi, %eax 											#
+				movl (%eax), %eax 										#
+				xor %edx, %edx  										#
+				pop %ecx  # iau prima valoare de pe stiva done 			#
+				mull %ecx 												#
+				# am in eax ce trebuie sa adun  						#
+				push %eax # retin pe stiva ce trb sa adun done 			#
+ 																		#
+				pushl 20(%ebp) # n 										#
+				pushl -8(%ebp) # j 										#
+				pushl -4(%ebp) # i 										#
+				call get_index 											#
+				addl $12, %esp # pop 									#
+ 																		#
+				add 16(%ebp), %eax 										#
+				# am in eax adresa la care trebuie sa pun rezultatul 	#
+ 								 										#
+				mov (%eax), %edx 										#
+				# am vechea valoarea de la (i,j) in edx					#
+				pop %ecx # ce trebuie sa adun							#
+				add %ecx, %edx # am noul rezultat in %edx 				#
+				mov %edx, (%eax) # pun la loc in matrice 				#
+						 												#
+							 											#
+			incl -12(%ebp) 												#	
+			jmp for3 													#
+			end_for3: 													#
+						 												#
+		incl -8(%ebp) 													#
+		jmp for2 														#
+		end_for2: 														#
+					 													#
+	incl -4(%ebp) 														#
+	jmp for1 															#
+	end_for1:															#
+																		#
+	pop %edi # done														#
+	pop %esi # done 													#
+	addl $12, %esp # done												#
+	pop %ebp # done														#
+ret		# end_matrix_mult												#
+# #######################################################################
 
-
-	subl $12, %esp # done
-	push %esi # done
-	push %edi # done
-
-	mov 8(%ebp), %esi
-	mov 12(%ebp), %edi
-	
-	pushl 20(%ebp) # n
-	pushl 16(%ebp) # $mres
-	call init_mat
-	addl $8, %esp # pop
-
-	#	-4(%ebp) i
-	#	-8(%ebp) j
-	#	-12(%ebp) k
-	
-	movl $0, -4(%ebp) # i
-	for1:
-	movl -4(%ebp), %eax
-	cmpl %eax, 20(%ebp)
-	je end_for1
-
-		movl $0, -8(%ebp)  # j	
-		for2:
-		movl -8(%ebp), %eax
-		cmpl %eax, 20(%ebp)
-		je end_for2
-
-			movl $0, -12(%ebp) # k
-			for3:
-			movl -12(%ebp), %eax
-			cmpl %eax, 20(%ebp)
-			je end_for3
-				# mres[i][j]+=m1[i][k]*m2[k][j]
-				pushl 20(%ebp) # n
-				pushl -12(%ebp) # k
-				pushl -4(%ebp) # i
-				call get_index
-				addl $12, %esp # pop
-				
-				add %esi, %eax
-				mov (%eax), %eax
-				push %eax # retin m1[i][k] done
-
-				pushl 20(%ebp) # n
-				pushl -8(%ebp) # j
-				pushl -12(%ebp) # k
-				call get_index
-				addl $12, %esp # pop
-
-				add %edi, %eax
-				movl (%eax), %eax
-				xor %edx, %edx 
-				pop %ecx  # iau prima valoare de pe stiva done
-				mull %ecx
-				# am in eax ce trebuie sa adun rezultatul
-				
-				push %eax # retin pe stiva ce trb sa adun done
-
-				pushl 20(%ebp) # n
-				pushl -8(%ebp) # j
-				pushl -4(%ebp) # i
-				call get_index
-				addl $12, %esp # pop
-
-				add 16(%ebp), %eax
-				# am in eax adresa la care trebuie sa pun rezultatul
-
-				mov (%eax), %edx # am vechea valoarea de la (i,j) in edx
-				pop %ecx # ce trebuie sa adun
-
-				add %ecx, %edx # am noul rezultat in %edx
-
-				mov %edx, (%eax) # pun la loc in matrice
-			
-
-			incl -12(%ebp)
-			jmp for3
-			end_for3:
-
-		incl -8(%ebp)
-		jmp for2
-		end_for2:
-
-	incl -4(%ebp)
-	jmp for1
-	end_for1:
-
-	pop %edi # done
-	pop %esi # done 
-	addl $12, %esp # done
-	pop %ebp # done
-ret
 
 .globl  main
 main:
 
-    # ####################
-	# read cerinta 		 #
+# ########################
+# read cerinta	 		 #
 	pushl $cerinta       #
 	call read_int 		 #
 	pop %eax       	     #
-	# ####################
+# ########################
 
 
-    # ###################
-	# read n 			#
+# ########################
+#	 read n 			#
 	pushl $n	 		#
 	call read_int 		#
 	pop %eax	  		#
-	# ###################
+# ########################
 
 
-push %ebp
+# ###################################################################################################
+	# mem aloc	for mat,rezultat,dims,mres															#
+	push %ebp																						#
+	mov $192, %eax 		# interruption codes 														#
+	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit						#
+	mov $49152 , %ecx	# how many bytes i need, also chose a multiple of 4096						#
+	mov $3, %edx		# read and write capabilities												#
+	mov $33 , %esi		# anon and shared 															#
+	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1		#
+	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0				#
+	int $0x80																						#
+	mov %eax, mat																					#
+																									#
+	mov $192, %eax 		# interruption codes 														#
+	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit						#
+	mov $49152 , %ecx	# how many bytes i need, also chose a multiple of 4096						#
+	mov $3, %edx		# read and write capabilities												#
+	mov $33 , %esi		# anon and shared 															#
+	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1		#
+	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0				#
+	int $0x80																						#
+	mov %eax, rezultat																				#
+																									#
+	mov $192, %eax 		# interruption codes 														#
+	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit						#
+	mov $4096 , %ecx	# how many bytes i need, also chose a multiple of 4096						#
+	mov $3, %edx		# read and write capabilities												#
+	mov $33 , %esi		# anon and shared 															#
+	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1		#
+	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0				#
+	int $0x80																						#
+	mov %eax, dims																					#
+																									#
+	mov $192, %eax 		# interruption codes 														#
+	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit						#
+	mov $49152 , %ecx	# how many bytes i need, also chose a multiple of 4096						#
+	mov $3, %edx		# read and write capabilities												#
+	mov $33 , %esi		# anon and shared 															#
+	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1		#
+	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0				#
+	int $0x80																						#
+	mov %eax, mres																					#
+																									#
+	pop %ebp																						#
+# ###################################################################################################
 
-	mov $192, %eax 		# interruption codes 
-	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit
-	mov $49152 , %ecx	# how many bytes i need, also chose a multiple of 4096
-	mov $3, %edx		# read and write capabilities
-	mov $33 , %esi		# anon and shared 
-	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1
-	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0
-	int $0x80
-	mov %eax, mat
 
-
-	mov $192, %eax 		# interruption codes 
-	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit
-	mov $49152 , %ecx	# how many bytes i need, also chose a multiple of 4096
-	mov $3, %edx		# read and write capabilities
-	mov $33 , %esi		# anon and shared 
-	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1
-	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0
-	int $0x80
-	mov %eax, rezultat
-
-
-	mov $192, %eax 		# interruption codes 
-	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit
-	mov $4096 , %ecx	# how many bytes i need, also chose a multiple of 4096
-	mov $3, %edx		# read and write capabilities
-	mov $33 , %esi		# anon and shared 
-	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1
-	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0
-	int $0x80
-	mov %eax, dims
-pop %ebp
-
-
-
-
-
-
-
-
-    # ##################################
-	# read nr legaturi pt fiecare varf #
+# ######################################
+# read nr legaturi pt fiecare varf 	   #
 	mov dims, %edi					   #
 	xor %ecx, %ecx  			       #
 loop_read_dims:   					   #
@@ -462,7 +467,7 @@ loop_read_dims:   					   #
 	inc %ecx						   #
 	jmp loop_read_dims   			   #
 fin_loop_read_dims:					   #
-	# ##################################
+# ######################################
 
 
 # #######################################
@@ -519,124 +524,103 @@ fin_loop_read_muchii:					#
 #   #####################################
 
 
-
-	# ##############									
-	# read lungime # 										
+# ##################									
+# 	read lungime   # 										
 	pushl $lungime # 										
 	call read_int  # 										
 	pop %eax       # 										
-	# ##############										
-															
-	# ##############										
-	# read sursa   #										
+# ##################									
+
+
+# ##################									
+#   read sursa     #										
 	pushl $sursa   #										
 	call read_int  #										
 	pop %eax       #										
-	# ##############										
-																
-	# #################										
-	# read destinatie #										
+# ##################									
+
+
+# #####################									
+# read destinatie 	  #										
 	pushl $destinatie #										
 	call read_int     #										
 	pop %eax          #										
-	# #################	
-auxet:
-	push %ebp
-
-	mov $192, %eax 		# interruption codes 
-	mov $0, %ebx		# let the kernel place the mapping anywhere it sees fit
-	mov $49152 , %ecx	# how many bytes i need, also chose a multiple of 4096
-	mov $3, %edx		# read and write capabilities
-	mov $33 , %esi		# anon and shared 
-	mov $-1, %edi 		# filedescriptor si not used in anonymous mappings, usually set as -1
-	mov $0, %ebp		# offset is not used in anonymous mappings, usually set as 0
-
-	int $0x80
-
-	pop %ebp
-	# teoretic acum la  eax am adresa unde am noua matrice
-
-	push %eax
-	# matricea iden #										#
-	# in rezultat	#										#
-	push n			#										#
-	push rezultat	#										#
-	call iden_mat	#										#
-	addl $8, %esp 	#										#
-	# ###############										#
-	pop %eax														#
-															#
-# ######################################					#
-#   rezultat*=mat de lungime ori		#					#
-	xor %ecx, %ecx						#					#
-	loop_pow:							#					#
-	cmp %ecx, lungime					#					#
-	je fin_loop_pow						#					#
-										#					#
-	# rezultat= rezultat * mat			#					#
-	# i.e.								#					#
-	# matrix_mult(mat,rezultat,mres,n)	#					#
-	# mat_copy(mres,rezultat,n)			#					#
-	push %ecx	
-	push %eax						#					#
-		push n 							#					#
-		push %eax						#					#
-		push mat						#					#
-		push rezultat					#					#
-		call matrix_mult				#					#
-		add $16, %esp					#					#
-	pop %eax	
-	push %eax								#					#
-		push n							#					#
-		push rezultat					#					#
-		push %eax						#					#
-		call copy_mat					#					#
-		add $12, %esp
-			
-	pop %eax				#					#
-	pop %ecx							#					#
-										#					#
-	inc %ecx							#					#
-	jmp loop_pow						#					#
-	fin_loop_pow:						#					#
-# #######################################					#
-															#
-															#
-# ###################										#
-# if u wanna see	#										#
-# the entire matrix	#										#
-#	push n			#										#
-#	push rezultat	#										#
-#	call print_mat	#										#
-#	add $8, %esp	#										#
-# ###################										#
-															#
-															#
-# ###################################						#
-# print rezultat[sursa][destinatie] #						#
-	push n							#						#
-	push destinatie					#						#
-	push sursa						#						#
-	call get_index					#						#
-	add $12, %esp					#						#
-									#						#
-	mov rezultat, %esi				#						#
-	add %esi, %eax					#						#
-	mov (%eax), %eax				#						#
-	push %eax						#						#
-	call print_int					#						#
-	pop %eax						#						#
-									#						#
-	pusha		# keep				#						#
-	push $printfEndl				#						#
-	call printf 					#						#
-	pop %eax						#						#
-	popa		# keep				#						#
-# ###################################						#
-# ###########################################################
+# #####################									
 
 
+# ###################
+	# matricea iden #										
+	# in rezultat	#										
+	push n			#										
+	push rezultat	#										
+	call iden_mat	#										
+	addl $8, %esp 	#										
+# ###################										
 
+
+# #######################################					
+#   rezultat*=mat de lungime ori		#					
+	xor %ecx, %ecx						#					
+	loop_pow:							#					
+	cmp %ecx, lungime					#					
+	je fin_loop_pow						#					
+	push %ecx							#
+	# rezultat= rezultat * mat			#					
+	# i.e.								#					
+	# matrix_mult(mat,rezultat,mres,n)	#					
+	# mat_copy(mres,rezultat,n)			#					
+										#					
+		push n 							#					
+		push mres						#					
+		push mat						#					
+		push rezultat					#					
+		call matrix_mult				#					
+		add $16, %esp					#					
+										#
+		push n							#					
+		push rezultat					#					
+		push mres						#					
+		call copy_mat					#					
+		add $12, %esp					#
+										#
+	pop %ecx							#					
+	inc %ecx							#					
+	jmp loop_pow						#					
+	fin_loop_pow:						#					
+# #######################################					
+															
+															
+# ###################										
+# if u wanna see	#										
+# the entire matrix	#										
+#	push n			#										
+#	push rezultat	#										
+#	call print_mat	#										
+#	add $8, %esp	#										
+# ###################										
+															
+															
+# ###################################						
+# print rezultat[sursa][destinatie] #						
+	push n							#						
+	push destinatie					#						
+	push sursa						#						
+	call get_index					#						
+	add $12, %esp					#						
+									#						
+	mov rezultat, %esi				#						
+	add %esi, %eax					#						
+	mov (%eax), %eax				#						
+	push %eax						#						
+	call print_int					#						
+	pop %eax						#						
+									#						
+	pusha		# keep				#						
+	push $printfEndl				#						
+	call printf 					#						
+	pop %eax						#						
+	popa		# keep				#						
+# ###################################						
 
 
 # #######################						
