@@ -550,6 +550,11 @@ cerinta2:													#
 	push %eax						#						#
 	call print_int					#						#
 	pop %eax						#						#
+	pusha		# keep				#						#						
+	push $printfEndl				#						#						
+	call printf 					#						#						
+	pop %eax						#						#						
+	popa		# keep				#						#
 # ###################################						#
 # ###########################################################														
 
