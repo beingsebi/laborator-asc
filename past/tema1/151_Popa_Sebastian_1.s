@@ -46,9 +46,26 @@
 	mres: .space 4
 	rezultat: .space 4
     formatScanf: .asciz "%d"
-	printfInt: .asciz "%d "
+	printfInt: .asciz "%d"
+	printfspace: .asciz " "
 	printfEndl: .asciz "\n"
 .text
+
+
+# ###################################################
+print_space:     # print_space()          	        #
+	pusha			# keep							#
+		push $printfspace							#
+		call printf 								#
+		addl $4, %esp								#		
+													#
+		pushl $0        							#
+		call fflush 								#
+		addl $4, %esp								#
+	popa											#
+ret    # end_print_space						  	#
+# ###################################################
+
 
 
 # ###################################################
@@ -57,6 +74,7 @@
 read_int:                             	         	#
 	push %ebp                                    	#
 	mov %esp, %ebp                               	#
+
 	pusha  											#
 				                                 	#
 	push 8(%ebp)                                   	#
@@ -260,8 +278,8 @@ loop_print_line:									#
 													#
 		push %eax									#
 		call print_int								#
+		call print_space							#
 		pop %eax									#
-													#
 		inc %edx									#
 		jmp loop_print_coloane						#
 	fin_loop_print_coloane:							#

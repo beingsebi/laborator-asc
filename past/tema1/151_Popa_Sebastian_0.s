@@ -12,7 +12,8 @@
 	rezultat: .space 50000
 
     formatScanf: .asciz "%d"
-	printfInt: .asciz "%d "
+	printfInt: .asciz "%d"
+	printfspace: .asciz " "
 	printfEndl: .asciz "\n"
 .text
 
@@ -53,6 +54,21 @@ print_int:     # print_int(x)          	         	#
 	pop %ebp                                       	#
 ret    # end_print_int							  	#
 # ###################################################
+
+# ###################################################
+print_space:     # print_space()          	        #
+	pusha			# keep							#
+		push $printfspace							#
+		call printf 								#
+		addl $4, %esp								#		
+													#
+		pushl $0        							#
+		call fflush 								#
+		addl $4, %esp								#
+	popa											#
+ret    # end_print_space						  	#
+# ###################################################
+
 
 # ###############################################
 # function to get index in array if given #######
@@ -226,6 +242,8 @@ loop_print_line:									#
 		push %eax									#
 		call print_int								#
 		pop %eax									#
+		
+		call print_space
 													#
 		inc %edx									#
 		jmp loop_print_coloane						#
